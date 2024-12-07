@@ -1,0 +1,54 @@
+/* General Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #141414; /* Dark background matching Netflix theme */
+    color: #ffffff; /* White text color */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Container */
+.container {
+    text-align: center;
+}
+
+/* Header */
+h1 {
+    font-size: 2.5em;
+    color: #e50914; /* Netflix Red */
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+    margin-bottom: 20px;
+}
+
+/* Progress Text Container */
+.progress-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50px;
+    margin: 20px auto;
+}
+
+/* Progress Text Styling */
+.progress-text {
+    font-size: 1.8em;
+    color: #e50914; /* Netflix Red */
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+    animation: pulse 1.5s infinite;
+}
+
+/* Animation for Progress Text */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(1.1);
+    }
+}

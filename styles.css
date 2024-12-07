@@ -1,0 +1,59 @@
+/* Global Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: #141414; /* Netflix-like background color */
+    color: #ffffff; /* Netflix-like text color */
+}
+
+/* Center Container */
+.container {
+    text-align: center;
+}
+
+/* Title (if needed later) */
+h1 {
+    margin-bottom: 30px;
+    font-size: 3em;
+    color: #e50914; /* Netflix brand color */
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+}
+
+/* Navigation Options */
+.options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Buttons (Navigation Links) */
+.options a {
+    text-decoration: none;
+    font-size: 1.5em;
+    color: #ffffff;
+    background-color: #e50914; /* Netflix red */
+    padding: 15px 30px;
+    border-radius: 5px;
+    transition: transform 0.2s ease, background-color 0.3s ease;
+    text-align: center;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Hover Effects for Buttons */
+.options a:hover {
+    background-color: #f40612; /* Slightly lighter red */
+    transform: scale(1.05); /* Button enlarges slightly on hover */
+}
+
+/* Add spacing for small devices */
+@media (max-width: 600px) {
+    .options a {
+        font-size: 1.2em;
+        padding: 10px 20px;
+    }
+}
