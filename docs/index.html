@@ -34,78 +34,79 @@
         </div>
     </main>
     <script>
-    const apiKey = "8be1f700d2547e560efe20e398bbe52b";
-    const imageBaseUrl = "https://image.tmdb.org/t/p/w500";
+        const apiKey = "8be1f700d2547e560efe20e398bbe52b";
+        const imageBaseUrl = "https://image.tmdb.org/t/p/w500";
 
-    // Function to fetch trending data
-    async function fetchTrending(mediaType, timeWindow) {
-        const url = `https://api.themoviedb.org/3/trending/${mediaType}/${timeWindow}?api_key=${apiKey}`;
-        try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                console.error(`Error fetching trending ${mediaType}:`, response.statusText);
+        // Function to fetch trending data
+        async function fetchTrending(mediaType, timeWindow) {
+            const url = `https://api.themoviedb.org/3/trending/${mediaType}/${timeWindow}?api_key=${apiKey}`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    console.error(`Error fetching trending ${mediaType}:`, response.statusText);
+                    return [];
+                }
+                const data = await response.json();
+                return data.results || [];
+            } catch (error) {
+                console.error(`Error fetching trending ${mediaType}:`, error);
                 return [];
             }
-            const data = await response.json();
-            return data.results || [];
-        } catch (error) {
-            console.error(`Error fetching trending ${mediaType}:`, error);
-            return [];
         }
-    }
 
-    // Function to display trending items
-    function displayTrending(data, containerId) {
-        const container = document.getElementById(containerId);
-        container.innerHTML = ""; // Clear previous content
-        data.forEach(item => {
-            const card = document.createElement("div");
-            card.className = "trending-card";
+        // Function to display trending items
+        function displayTrending(data, containerId, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ""; // Clear previous content
+            data.forEach(item => {
+                const card = document.createElement("div");
+                card.className = "trending-card";
+                card.dataset.id = item.id; // Store the TMDB ID
 
-            const imageUrl = item.poster_path
-                ? `${imageBaseUrl}${item.poster_path}`
-                : "placeholder.jpg"; // Fallback image
+                const imageUrl = item.poster_path
+                    ? `${imageBaseUrl}${item.poster_path}`
+                    : "placeholder.jpg"; // Fallback image
 
-            // Add the movie card with an onclick event to redirect to movie_page.html
-            card.innerHTML = `
-                <img 
-                    src="${imageUrl}" 
-                    alt="${item.title || item.name}" 
-                    class="trending-image" 
-                    onclick="openMoviePage(${item.id})">
-                <p class="trending-title">${item.title || item.name}</p>
-            `;
-            container.appendChild(card);
-        });
-    }
+                card.innerHTML = `
+                    <img src="${imageUrl}" alt="${item.title || item.name}" class="trending-image">
+                    <p class="trending-title">${item.title || item.name}</p>
+                `;
 
-    // Function to redirect to movie_page.html with TMDB ID
-    function openMoviePage(tmdbId) {
-        window.location.href = `movie_page.html?tmdbId=${tmdbId}`;
-    }
+                // Add event listener to open movie_page or tvshow_page
+                card.addEventListener("click", () => {
+                    if (type === "movie") {
+                        window.location.href = `movie_page.html?tmdbId=${item.id}`;
+                    } else if (type === "tv") {
+                        window.location.href = `tvshow_page.html?tvId=${item.id}`;
+                    }
+                });
 
-    // Function to add horizontal scrolling functionality
-    function addScrollButtons(leftButtonId, rightButtonId, containerId) {
-        const leftButton = document.getElementById(leftButtonId);
-        const rightButton = document.getElementById(rightButtonId);
-        const container = document.getElementById(containerId);
+                container.appendChild(card);
+            });
+        }
 
-        leftButton.addEventListener("click", () => {
-            container.scrollBy({ left: -300, behavior: "smooth" });
-        });
+        // Function to add horizontal scrolling functionality
+        function addScrollButtons(leftButtonId, rightButtonId, containerId) {
+            const leftButton = document.getElementById(leftButtonId);
+            const rightButton = document.getElementById(rightButtonId);
+            const container = document.getElementById(containerId);
 
-        rightButton.addEventListener("click", () => {
-            container.scrollBy({ left: 300, behavior: "smooth" });
-        });
-    }
+            leftButton.addEventListener("click", () => {
+                container.scrollBy({ left: -300, behavior: "smooth" });
+            });
 
-    // Fetch and display trending movies and TV shows
-    fetchTrending("movie", "week").then(data => displayTrending(data, "trending-movies"));
-    fetchTrending("tv", "week").then(data => displayTrending(data, "trending-tvshows"));
+            rightButton.addEventListener("click", () => {
+                container.scrollBy({ left: 300, behavior: "smooth" });
+            });
+        }
 
-    // Add scrolling functionality to carousels
-    addScrollButtons("scroll-left-movies", "scroll-right-movies", "trending-movies");
-    addScrollButtons("scroll-left-tvshows", "scroll-right-tvshows", "trending-tvshows");
+        // Fetch and display trending movies and TV shows
+        fetchTrending("movie", "week").then(data => displayTrending(data, "trending-movies", "movie"));
+        fetchTrending("tv", "week").then(data => displayTrending(data, "trending-tvshows", "tv"));
+
+        // Add scrolling functionality to carousels
+        addScrollButtons("scroll-left-movies", "scroll-right-movies", "trending-movies");
+        addScrollButtons("scroll-left-tvshows", "scroll-right-tvshows", "trending-tvshows");
     </script>
 </body>
 </html>
