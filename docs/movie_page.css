@@ -1,0 +1,102 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #141414;
+    color: #ffffff;
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 50px auto;
+    padding: 20px;
+}
+
+h1 {
+    font-size: 2.5em;
+    color: #e50914;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.content {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-left: 30px;
+}
+
+#player-container {
+    flex: 0 0 1000px;
+}
+
+.movie-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: flex-start;
+    text-align: left;
+}
+
+.poster img {
+    width: 100%;
+    max-width: 300px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.7);
+}
+
+.score-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.score-title {
+    font-size: 1.5em;
+    color: #ffffff;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.circle {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+.circle svg {
+    transform: rotate(-90deg);
+    width: 100%;
+    height: 100%;
+}
+
+.circle circle {
+    fill: none;
+    stroke-width: 10;
+}
+
+.circle .background {
+    stroke: #444;
+}
+
+.circle .progress {
+    stroke: #e50914;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.4s ease;
+}
+
+.circle span {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.2em;
+    color: #ffffff;
+    font-weight: bold;
+}

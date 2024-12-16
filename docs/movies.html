@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MYFLIX - Movies</title>
     <link rel="stylesheet" href="movies.css">
-    <link rel="icon" href="tab_icon.png" type="image/png">
 </head>
 <body>
     <div class="container">
@@ -14,123 +13,125 @@
             <input type="text" id="search-bar" placeholder="Enter movie name">
             <button id="search-button">Search</button>
         </div>
-        <div class="carousel-wrapper hidden">
-            <button id="scroll-left" class="scroll-button">&lt;</button>
-            <div id="search-results" class="movie-carousel"></div>
-            <button id="scroll-right" class="scroll-button">&gt;</button>
-        </div>
-        <div id="player-container"></div>
+        <div id="movie-results" class="movie-grid"></div>
     </div>
-
     <script>
-        const apiKey = "8be1f700d2547e560efe20e398bbe52b";
-        const imageBaseUrl = "https://image.tmdb.org/t/p/w500";
+    const apiKey = "8be1f700d2547e560efe20e398bbe52b";
+    const imageBaseUrl = "https://image.tmdb.org/t/p/w500";
 
-        // Function to search movies
-        async function searchMovies(query) {
-            const url = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(query)}`;
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error("Failed to fetch data from TMDB.");
-            }
-            return response.json();
+    // Function to search movies
+    async function searchMovies(query) {
+        const url = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(query)}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            console.error("Error fetching movies:", response.statusText);
+            return [];
+        }
+        const data = await response.json();
+        return data.results || [];
+    }
+
+    // Function to display movies
+    function displayMovies(movies) {
+        const resultsContainer = document.getElementById("movie-results");
+        resultsContainer.innerHTML = ""; // Clear previous results
+
+        if (movies.length === 0) {
+            resultsContainer.innerHTML = "<p>No movies found.</p>";
+            return;
         }
 
-        // Function to display search results
-        function displayResults(movies) {
-            const resultsContainer = document.getElementById("search-results");
-            const carouselWrapper = document.querySelector(".carousel-wrapper");
-            resultsContainer.innerHTML = ""; // Clear previous results
+        movies.forEach(movie => {
+            const card = document.createElement("div");
+            card.className = "movie-card";
+            card.dataset.tmdbId = movie.id;
 
-            if (movies.length === 0) {
-                resultsContainer.innerHTML = "<p>No movies found. Try a different name.</p>";
-                carouselWrapper.classList.add("hidden");
-                return;
-            }
+            const posterUrl = movie.poster_path
+                ? `${imageBaseUrl}${movie.poster_path}`
+                : "placeholder.jpg";
 
-            carouselWrapper.classList.remove("hidden"); // Show arrows and carousel
+            card.innerHTML = `
+                <img src="${posterUrl}" alt="${movie.title}" class="movie-poster">
+                <h3>${movie.title}</h3>
+            `;
 
-            movies.forEach(movie => {
-                const movieCard = document.createElement("div");
-                movieCard.className = "movie-card";
-                movieCard.dataset.tmdbId = movie.id; // Store TMDB ID
-
-                const imageUrl = movie.backdrop_path
-                    ? `${imageBaseUrl}${movie.backdrop_path}`
-                    : "placeholder.jpg"; // Fallback image if no backdrop
-
-                movieCard.innerHTML = `
-                    <img src="${imageUrl}" alt="${movie.title}" class="movie-poster">
-                    <div class="movie-info">
-                        <h3>${movie.title}</h3>
-                        <p>${movie.release_date ? movie.release_date.split("-")[0] : "Unknown"}</p>
-                    </div>
-                `;
-                resultsContainer.appendChild(movieCard);
+            card.addEventListener("click", () => {
+                saveSearchState();
+                window.location.href = `movie_page.html?tmdbId=${movie.id}`;
             });
+
+            resultsContainer.appendChild(card);
+        });
+    }
+
+    // Save search query and results in localStorage
+    function saveSearchState() {
+        const query = document.getElementById("search-bar").value.trim();
+        const results = document.getElementById("movie-results").innerHTML;
+        localStorage.setItem("moviesQuery", query);
+        localStorage.setItem("moviesResults", results);
+        sessionStorage.setItem("cameFromMoviePage", "true"); // Track navigation from movie_page.html
+    }
+
+    // Load search state from localStorage
+    function loadSearchState() {
+        const cameFromMoviePage = sessionStorage.getItem("cameFromMoviePage");
+
+        if (cameFromMoviePage === "true") {
+            const query = localStorage.getItem("moviesQuery");
+            const results = localStorage.getItem("moviesResults");
+
+            if (query) {
+                document.getElementById("search-bar").value = query;
+            }
+            if (results) {
+                document.getElementById("movie-results").innerHTML = results;
+
+                // Reattach click listeners to cards
+                document.querySelectorAll(".movie-card").forEach(card => {
+                    card.addEventListener("click", () => {
+                        saveSearchState();
+                        window.location.href = `movie_page.html?tmdbId=${card.dataset.tmdbId}`;
+                    });
+                });
+            }
+        } else {
+            clearSearchState(); // Clear state if not navigating from movie_page.html
         }
+    }
 
-        // Function to embed movie player
-        function embedMovie(movieCard, tmdbId) {
-            const playerContainer = document.getElementById("player-container");
-            playerContainer.innerHTML = ""; // Clear previous player
+    // Clear search state from localStorage
+    function clearSearchState() {
+        localStorage.removeItem("moviesQuery");
+        localStorage.removeItem("moviesResults");
+        sessionStorage.removeItem("cameFromMoviePage"); // Reset navigation flag
+    }
 
-            const vidlinkURL = `https://vidlink.pro/movie/${tmdbId}`;
-            const iframe = document.createElement("iframe");
-            iframe.src = `${vidlinkURL}?autoplay=true&title=true&primaryColor=141414&secondaryColor=e50914&iconColor=e50914`;
-            iframe.allowFullscreen = true;
-
-            playerContainer.appendChild(iframe);
-
-            // Enlarge selected movie image
-            const allCards = document.querySelectorAll(".movie-card");
-            allCards.forEach(card => card.classList.remove("selected"));
-            movieCard.classList.add("selected");
+    // Add event listeners for search
+    document.getElementById("search-button").addEventListener("click", async () => {
+        const query = document.getElementById("search-bar").value.trim();
+        if (!query) {
+            alert("Please enter a movie name.");
+            return;
         }
+        const movies = await searchMovies(query);
+        displayMovies(movies);
+    });
 
-        // Scroll carousel
-        function scrollCarousel(direction) {
-            const carousel = document.getElementById("search-results");
-            const scrollAmount = carousel.offsetWidth / 2; // Scroll half the width of the visible area
-            carousel.scrollBy({
-                left: direction === "left" ? -scrollAmount : scrollAmount,
-                behavior: "smooth",
-            });
-        }
-
-        // Add search functionality for both Enter and button click
-        async function handleSearch() {
+    document.getElementById("search-bar").addEventListener("keydown", async (event) => {
+        if (event.key === "Enter") {
             const query = document.getElementById("search-bar").value.trim();
             if (!query) {
                 alert("Please enter a movie name.");
                 return;
             }
-
-            try {
-                const tmdbData = await searchMovies(query);
-                displayResults(tmdbData.results || []);
-            } catch (error) {
-                alert("Failed to fetch movie data. Please try again.");
-            }
+            const movies = await searchMovies(query);
+            displayMovies(movies);
         }
+    });
 
-        document.getElementById("search-button").addEventListener("click", handleSearch);
-
-        document.getElementById("search-bar").addEventListener("keydown", (event) => {
-            if (event.key === "Enter") {
-                handleSearch();
-            }
-        });
-
-        document.getElementById("search-results").addEventListener("click", (event) => {
-            const movieCard = event.target.closest(".movie-card");
-            if (movieCard && movieCard.dataset.tmdbId) {
-                embedMovie(movieCard, movieCard.dataset.tmdbId);
-            }
-        });
-
-        document.getElementById("scroll-left").addEventListener("click", () => scrollCarousel("left"));
-        document.getElementById("scroll-right").addEventListener("click", () => scrollCarousel("right"));
-    </script>
+    // Load search state on page load
+    window.addEventListener("load", loadSearchState);
+</script>
 </body>
 </html>

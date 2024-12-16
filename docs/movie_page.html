@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Details</title>
+    <link rel="stylesheet" href="movie_page.css">
+</head>
+<body>
+    <div class="container">
+        <h1 id="movie-title"></h1>
+        <div class="content">
+            <div id="player-container">
+                <!-- Player will be dynamically added here -->
+            </div>
+            <div class="movie-details">
+                <div class="poster">
+                    <img id="movie-poster" src="" alt="Movie Poster">
+                </div>
+                <div class="score-container">
+                    <h3 class="score-title">Score</h3>
+                    <div class="circle">
+                        <svg>
+                            <circle class="background" cx="50" cy="50" r="40"></circle>
+                            <circle class="progress" cx="50" cy="50" r="40"></circle>
+                        </svg>
+                        <span id="user-score">0%</span>
+                    </div>
+                </div>
+                <div class="info">
+                    <p><strong>Release Date:</strong> <span id="movie-release-date"></span></p>
+                    <p><strong>Runtime:</strong> <span id="movie-runtime"></span></p>
+                    <p><strong>Genres:</strong> <span id="movie-genres"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const apiKey = "8be1f700d2547e560efe20e398bbe52b";
+        const imageBaseUrl = "https://image.tmdb.org/t/p/w500";
+
+        // Get TMDB ID from query parameter
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        const tmdbId = getQueryParam("tmdbId");
+
+        // Function to fetch and display movie details
+        async function displayMovieDetails(tmdbId) {
+            try {
+                const url = `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${apiKey}`;
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch movie details: ${response.statusText}`);
+                }
+                const movie = await response.json();
+
+                // Update UI with movie details
+                document.getElementById("movie-title").textContent = movie.title;
+                document.getElementById("movie-poster").src = movie.poster_path
+                    ? `${imageBaseUrl}${movie.poster_path}`
+                    : "placeholder.jpg";
+                document.getElementById("movie-release-date").textContent = movie.release_date;
+                document.getElementById("movie-runtime").textContent = `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m`;
+                document.getElementById("movie-genres").textContent = movie.genres.map(genre => genre.name).join(", ");
+
+                // Update user score circle
+                updateUserScore(movie.vote_average * 10);
+
+                // Embed the VidLink player for the movie
+                embedMovie(tmdbId);
+            } catch (error) {
+                console.error("Error displaying movie details:", error);
+                document.body.innerHTML = "<h1>Failed to load movie details.</h1>";
+            }
+        }
+
+        // Function to update user score
+        function updateUserScore(score) {
+            const circle = document.querySelector(".circle .progress");
+            const scoreText = document.getElementById("user-score");
+            const radius = 40; // Radius of the circle (matches the SVG circle radius)
+            const circumference = 2 * Math.PI * radius;
+
+            // Set circle attributes for proper animation
+            circle.style.strokeDasharray = `${circumference}`;
+            const offset = circumference - (score / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+
+            // Set the percentage text
+            scoreText.textContent = `${score.toFixed(0)}%`;
+        }
+
+        // Function to embed the VidLink player
+        function embedMovie(tmdbId) {
+            const playerContainer = document.getElementById("player-container");
+            playerContainer.innerHTML = ""; // Clear previous player
+
+            const vidlinkURL = `https://vidlink.pro/movie/${tmdbId}`;
+            const iframe = document.createElement("iframe");
+
+            iframe.style.width = "1000px";
+            iframe.style.height = "600px";
+            iframe.style.border = "none";
+            iframe.style.borderRadius = "10px";
+            iframe.style.boxShadow = "0px 8px 20px rgba(0, 0, 0, 0.7)";
+
+            iframe.src = `${vidlinkURL}?autoplay=true&title=true&primaryColor=141414&secondaryColor=e50914&iconColor=e50914`;
+            iframe.allowFullscreen = true;
+
+            playerContainer.appendChild(iframe);
+        }
+
+        // Fetch and display movie details on page load
+        if (tmdbId) {
+            displayMovieDetails(tmdbId);
+        } else {
+            document.body.innerHTML = "<h1>No movie selected.</h1>";
+        }
+    </script>
+</body>
+</html>
