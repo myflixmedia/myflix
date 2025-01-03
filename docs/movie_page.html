@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Movie Details</title>
     <link rel="stylesheet" href="movie_page.css">
+    <link rel="icon" href="tab_icon.png" type="image/png">
 </head>
 <body>
     <div class="container">
@@ -36,10 +37,34 @@
         </div>
     </div>
     <script>
+        // Pop-up blocking script
+        window.open = function() {
+            console.log("Pop-up attempt blocked.");
+            return null; // Block the pop-up
+        };
+
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node instanceof HTMLElement) {
+                        const styles = getComputedStyle(node);
+                        if (styles.position === 'fixed' || styles.position === 'absolute') {
+                            if (node.innerHTML.includes('popup') || node.className.includes('popup')) {
+                                node.remove();
+                                console.log("Pop-up removed.");
+                            }
+                        }
+                    }
+                });
+            });
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        // Movie details script
         const apiKey = "8be1f700d2547e560efe20e398bbe52b";
         const imageBaseUrl = "https://image.tmdb.org/t/p/w500";
 
-        // Get TMDB ID from query parameter
         function getQueryParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(param);
@@ -47,7 +72,6 @@
 
         const tmdbId = getQueryParam("tmdbId");
 
-        // Function to fetch and display movie details
         async function displayMovieDetails(tmdbId) {
             try {
                 const url = `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${apiKey}`;
@@ -57,7 +81,6 @@
                 }
                 const movie = await response.json();
 
-                // Update UI with movie details
                 document.getElementById("movie-title").textContent = movie.title;
                 document.getElementById("movie-poster").src = movie.poster_path
                     ? `${imageBaseUrl}${movie.poster_path}`
@@ -66,10 +89,8 @@
                 document.getElementById("movie-runtime").textContent = `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m`;
                 document.getElementById("movie-genres").textContent = movie.genres.map(genre => genre.name).join(", ");
 
-                // Update user score circle
                 updateUserScore(movie.vote_average * 10);
 
-                // Embed the VidLink player for the movie
                 embedMovie(tmdbId);
             } catch (error) {
                 console.error("Error displaying movie details:", error);
@@ -77,26 +98,22 @@
             }
         }
 
-        // Function to update user score
         function updateUserScore(score) {
             const circle = document.querySelector(".circle .progress");
             const scoreText = document.getElementById("user-score");
-            const radius = 40; // Radius of the circle (matches the SVG circle radius)
+            const radius = 40;
             const circumference = 2 * Math.PI * radius;
 
-            // Set circle attributes for proper animation
             circle.style.strokeDasharray = `${circumference}`;
             const offset = circumference - (score / 100) * circumference;
             circle.style.strokeDashoffset = offset;
 
-            // Set the percentage text
             scoreText.textContent = `${score.toFixed(0)}%`;
         }
 
-        // Function to embed the VidLink player
         function embedMovie(tmdbId) {
             const playerContainer = document.getElementById("player-container");
-            playerContainer.innerHTML = ""; // Clear previous player
+            playerContainer.innerHTML = "";
 
             const vidlinkURL = `https://vidlink.pro/movie/${tmdbId}`;
             const iframe = document.createElement("iframe");
@@ -113,7 +130,6 @@
             playerContainer.appendChild(iframe);
         }
 
-        // Fetch and display movie details on page load
         if (tmdbId) {
             displayMovieDetails(tmdbId);
         } else {

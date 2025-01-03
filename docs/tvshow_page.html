@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TV Show Details</title>
     <link rel="stylesheet" href="tvshow_page.css">
+    <link rel="icon" href="tab_icon.png" type="image/png">
 </head>
 <body>
     <div class="container">
@@ -42,6 +43,31 @@
         </div>
     </div>
     <script>
+        // Pop-up blocking script
+        window.open = function() {
+            console.log("Pop-up attempt blocked.");
+            return null; // Block the pop-up
+        };
+
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node instanceof HTMLElement) {
+                        const styles = getComputedStyle(node);
+                        if (styles.position === 'fixed' || styles.position === 'absolute') {
+                            if (node.innerHTML.includes('popup') || node.className.includes('popup')) {
+                                node.remove();
+                                console.log("Pop-up removed.");
+                            }
+                        }
+                    }
+                });
+            });
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        // TV Show details script
         const apiKey = "8be1f700d2547e560efe20e398bbe52b";
         const imageBaseUrl = "https://image.tmdb.org/t/p/w500";
 
