@@ -37,29 +37,89 @@
         </div>
     </div>
     <script>
-        // Pop-up blocking script
-        window.open = function() {
-            console.log("Pop-up attempt blocked.");
-            return null; // Block the pop-up
-        };
+        // Enhanced Popup Blocking Script
+        (function() {
+            const originalWindowOpen = window.open;
 
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach((node) => {
-                    if (node instanceof HTMLElement) {
-                        const styles = getComputedStyle(node);
-                        if (styles.position === 'fixed' || styles.position === 'absolute') {
-                            if (node.innerHTML.includes('popup') || node.className.includes('popup')) {
-                                node.remove();
-                                console.log("Pop-up removed.");
-                            }
+            // Block popups globally
+            window.open = function(url, target, features) {
+                console.log(`Blocked popup: ${url}`);
+                return null;
+            };
+
+            // Monitor iframe interactions for potential popup triggers
+            document.addEventListener('click', (event) => {
+                const target = event.target;
+
+                if (target.tagName === 'IFRAME' || target.closest('iframe')) {
+                    window.open = originalWindowOpen;
+
+                    setTimeout(() => {
+                        window.open = function(url, target, features) {
+                            console.log(`Blocked popup: ${url}`);
+                            return null;
+                        };
+                    }, 100);
+                }
+            });
+
+            // Prevent popups on hover
+            document.addEventListener('mouseover', (event) => {
+                const target = event.target;
+
+                if (target.tagName === 'IFRAME' || target.closest('iframe')) {
+                    window.open = function(url, target, features) {
+                        console.log(`Blocked popup on hover: ${url}`);
+                        return null;
+                    };
+                }
+            });
+
+            // Reapply popup blockers dynamically and ensure iframe controls
+            const blockIframePopups = () => {
+                const iframes = document.querySelectorAll('iframe');
+                iframes.forEach((iframe) => {
+                    try {
+                        const iframeWindow = iframe.contentWindow;
+                        if (iframeWindow) {
+                            iframeWindow.open = function() {
+                                console.log("Blocked popup from iframe.");
+                                return null;
+                            };
+
+                            iframeWindow.alert = function() {
+                                console.log("Blocked alert from iframe.");
+                            };
+
+                            iframeWindow.confirm = function() {
+                                console.log("Blocked confirm from iframe.");
+                                return false;
+                            };
+
+                            iframeWindow.prompt = function() {
+                                console.log("Blocked prompt from iframe.");
+                                return null;
+                            };
+
+                            iframe.addEventListener('mouseover', () => {
+                                iframe.style.pointerEvents = 'auto';
+                            });
+
+                            iframe.addEventListener('mouseout', () => {
+                                iframe.style.pointerEvents = 'auto';
+                            });
                         }
+                    } catch (err) {
+                        console.warn("Unable to access iframe content window:", err);
                     }
                 });
-            });
-        });
+            };
 
-        observer.observe(document.body, { childList: true, subtree: true });
+            // Continuously monitor and block iframe popups
+            setInterval(blockIframePopups, 500);
+
+            console.log("Enhanced popup blocker initialized.");
+        })();
 
         // Movie details script
         const apiKey = "8be1f700d2547e560efe20e398bbe52b";
