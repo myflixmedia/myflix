@@ -6,23 +6,36 @@
     <title>TV Show Details</title>
     <link rel="stylesheet" href="tvshow_page.css">
     <link rel="icon" href="tab_icon.png" type="image/png">
+    <style>
+        [tabindex]:focus,
+        #seasons-dropdown:focus,
+        #episodes-list li:focus,
+        iframe:focus {
+            outline: 3px solid #00aaff;
+            transform: scale(1.03);
+            z-index: 10;
+        }
+        #episodes-list li {
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1 id="tv-title">Loading...</h1>
+    <div class="container" tabindex="0">
+        <h1 id="tv-title" tabindex="0">Loading...</h1>
         <div class="content">
-            <div class="seasons-episodes">
+            <div class="seasons-episodes" tabindex="0">
                 <h3>Seasons</h3>
-                <select id="seasons-dropdown">
+                <select id="seasons-dropdown" tabindex="0">
                     <option value="" disabled selected>Select a season</option>
                 </select>
                 <h3>Episodes</h3>
                 <ul id="episodes-list" class="hidden"></ul>
             </div>
-            <div id="player-container">
+            <div id="player-container" tabindex="0">
                 <!-- Player will be dynamically added here -->
             </div>
-            <div class="tv-details">
+            <div class="tv-details" tabindex="0">
                 <div class="poster">
                     <img id="tv-poster" src="" alt="TV Show Poster">
                 </div>
@@ -42,24 +55,39 @@
             </div>
         </div>
     </div>
+
     <script>
+        // Smart TV navigation: vertical focus movement + enter click
+        document.addEventListener('keydown', (e) => {
+            const focusables = Array.from(document.querySelectorAll('[tabindex], #episodes-list li'));
+            const active = document.activeElement;
+            const index = focusables.indexOf(active);
+            if (index === -1) return;
+
+            if (e.key === "ArrowDown" && index < focusables.length - 1) {
+                focusables[index + 1].focus();
+                e.preventDefault();
+            } else if (e.key === "ArrowUp" && index > 0) {
+                focusables[index - 1].focus();
+                e.preventDefault();
+            } else if (e.key === "Enter") {
+                active.click?.();
+                e.preventDefault();
+            }
+        });
+
         // Enhanced Popup Blocking Script
         (function() {
             const originalWindowOpen = window.open;
-
-            // Block popups globally
             window.open = function(url, target, features) {
                 console.log(`Blocked popup: ${url}`);
                 return null;
             };
 
-            // Monitor iframe interactions for potential popup triggers
             document.addEventListener('click', (event) => {
                 const target = event.target;
-
                 if (target.tagName === 'IFRAME' || target.closest('iframe')) {
                     window.open = originalWindowOpen;
-
                     setTimeout(() => {
                         window.open = function(url, target, features) {
                             console.log(`Blocked popup: ${url}`);
@@ -69,10 +97,8 @@
                 }
             });
 
-            // Prevent popups on hover
             document.addEventListener('mouseover', (event) => {
                 const target = event.target;
-
                 if (target.tagName === 'IFRAME' || target.closest('iframe')) {
                     window.open = function(url, target, features) {
                         console.log(`Blocked popup on hover: ${url}`);
@@ -81,87 +107,47 @@
                 }
             });
 
-            // Reapply popup blockers dynamically and ensure iframe controls
-            const blockIframePopups = () => {
+            setInterval(() => {
                 const iframes = document.querySelectorAll('iframe');
-                iframes.forEach((iframe) => {
+                iframes.forEach(iframe => {
                     try {
-                        const iframeWindow = iframe.contentWindow;
-                        if (iframeWindow) {
-                            iframeWindow.open = function() {
-                                console.log("Blocked popup from iframe.");
-                                return null;
-                            };
-
-                            iframeWindow.alert = function() {
-                                console.log("Blocked alert from iframe.");
-                            };
-
-                            iframeWindow.confirm = function() {
-                                console.log("Blocked confirm from iframe.");
-                                return false;
-                            };
-
-                            iframeWindow.prompt = function() {
-                                console.log("Blocked prompt from iframe.");
-                                return null;
-                            };
-
-                            iframe.addEventListener('mouseover', () => {
-                                iframe.style.pointerEvents = 'auto';
-                            });
-
-                            iframe.addEventListener('mouseout', () => {
-                                iframe.style.pointerEvents = 'auto';
-                            });
+                        const win = iframe.contentWindow;
+                        if (win) {
+                            win.open = () => null;
+                            win.alert = () => {};
+                            win.confirm = () => false;
+                            win.prompt = () => null;
+                            iframe.style.pointerEvents = 'auto';
                         }
                     } catch (err) {
-                        console.warn("Unable to access iframe content window:", err);
+                        console.warn("Unable to access iframe:", err);
                     }
                 });
-            };
-
-            // Continuously monitor and block iframe popups
-            setInterval(blockIframePopups, 500);
-
-            console.log("Enhanced popup blocker initialized.");
+            }, 500);
         })();
 
-        // TV Show details script
         const apiKey = "8be1f700d2547e560efe20e398bbe52b";
         const imageBaseUrl = "https://image.tmdb.org/t/p/w500";
-
-        function getQueryParam(param) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(param);
-        }
-
-        const tvId = getQueryParam("tvId");
+        const tvId = new URLSearchParams(window.location.search).get("tvId");
 
         async function displayTVShowDetails(tvId) {
             try {
                 const url = `https://api.themoviedb.org/3/tv/${tvId}?api_key=${apiKey}`;
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch TV show details: ${response.statusText}`);
-                }
-                const tvShow = await response.json();
+                const res = await fetch(url);
+                const tvShow = await res.json();
 
                 document.getElementById("tv-title").textContent = tvShow.name;
-                document.getElementById("tv-poster").src = tvShow.poster_path
-                    ? `${imageBaseUrl}${tvShow.poster_path}`
-                    : "placeholder.jpg";
+                document.getElementById("tv-poster").src = tvShow.poster_path ? `${imageBaseUrl}${tvShow.poster_path}` : "placeholder.jpg";
                 document.getElementById("tv-status").textContent = tvShow.status || "Unknown";
                 document.getElementById("tv-first-air-date").textContent = tvShow.first_air_date || "Unknown";
                 document.getElementById("tv-total-seasons").textContent = tvShow.number_of_seasons || "Unknown";
                 document.getElementById("tv-total-episodes").textContent = tvShow.number_of_episodes || "Unknown";
-                document.getElementById("tv-genres").textContent = tvShow.genres.map(genre => genre.name).join(", ") || "Unknown";
+                document.getElementById("tv-genres").textContent = tvShow.genres.map(g => g.name).join(", ") || "Unknown";
 
                 updateUserScore(tvShow.vote_average * 10);
-
                 populateSeasonsDropdown(tvShow.seasons);
             } catch (error) {
-                console.error("Error displaying TV show details:", error);
+                console.error("Error loading TV show:", error);
                 document.body.innerHTML = "<h1>Failed to load TV show details.</h1>";
             }
         }
@@ -169,74 +155,66 @@
         function updateUserScore(score) {
             const circle = document.querySelector(".circle");
             const scoreText = document.getElementById("user-score");
-
             scoreText.textContent = `${score.toFixed(0)}%`;
-
             circle.style.setProperty("--percent", `${score}%`);
         }
 
         function populateSeasonsDropdown(seasons) {
-            const seasonsDropdown = document.getElementById("seasons-dropdown");
-            seasonsDropdown.innerHTML = '<option value="" disabled selected>Select a season</option>';
+            const dropdown = document.getElementById("seasons-dropdown");
+            dropdown.innerHTML = '<option value="" disabled selected>Select a season</option>';
 
-            seasons
-                .filter(season => season.season_number !== 0)
-                .forEach(season => {
-                    const option = document.createElement("option");
-                    option.value = season.season_number;
-                    option.textContent = `Season ${season.season_number}`;
-                    seasonsDropdown.appendChild(option);
-                });
+            seasons.filter(s => s.season_number !== 0).forEach(season => {
+                const option = document.createElement("option");
+                option.value = season.season_number;
+                option.textContent = `Season ${season.season_number}`;
+                dropdown.appendChild(option);
+            });
 
-            seasonsDropdown.addEventListener("change", (event) => {
-                const selectedSeason = event.target.value;
-                if (selectedSeason) {
-                    displayEpisodes(tvId, selectedSeason);
-                }
+            dropdown.addEventListener("change", (e) => {
+                const season = e.target.value;
+                if (season) displayEpisodes(tvId, season);
             });
         }
 
         async function displayEpisodes(tvId, seasonNumber) {
             const url = `https://api.themoviedb.org/3/tv/${tvId}/season/${seasonNumber}?api_key=${apiKey}`;
-            const response = await fetch(url);
-            const seasonDetails = await response.json();
-
+            const res = await fetch(url);
+            const seasonDetails = await res.json();
             const episodesList = document.getElementById("episodes-list");
+
             episodesList.innerHTML = "";
             episodesList.classList.remove("hidden");
 
             seasonDetails.episodes.forEach(episode => {
-                const episodeItem = document.createElement("li");
-                episodeItem.textContent = `Episode ${episode.episode_number}: ${episode.name}`;
-                episodeItem.addEventListener("click", () => {
-                    highlightSelectedEpisode(episodeItem);
+                const item = document.createElement("li");
+                item.setAttribute("tabindex", "0");
+                item.textContent = `Episode ${episode.episode_number}: ${episode.name}`;
+                item.addEventListener("click", () => {
+                    highlightSelectedEpisode(item);
                     embedPlayer(tvId, seasonNumber, episode.episode_number);
                 });
-                episodesList.appendChild(episodeItem);
+                episodesList.appendChild(item);
             });
         }
 
-        function highlightSelectedEpisode(selectedEpisode) {
-            const allEpisodes = document.querySelectorAll("#episodes-list li");
-            allEpisodes.forEach(episode => episode.classList.remove("selected"));
-            selectedEpisode.classList.add("selected");
+        function highlightSelectedEpisode(el) {
+            document.querySelectorAll("#episodes-list li").forEach(li => li.classList.remove("selected"));
+            el.classList.add("selected");
         }
 
         function embedPlayer(tvId, seasonNumber, episodeNumber) {
             const playerContainer = document.getElementById("player-container");
             playerContainer.innerHTML = "";
 
-            const vidlinkURL = `https://vidlink.pro/tv/${tvId}/${seasonNumber}/${episodeNumber}`;
             const iframe = document.createElement("iframe");
-
+            iframe.src = `https://vidlink.pro/tv/${tvId}/${seasonNumber}/${episodeNumber}?autoplay=true&title=true&primaryColor=141414&secondaryColor=e50914&iconColor=e50914`;
             iframe.style.width = "1000px";
             iframe.style.height = "600px";
             iframe.style.border = "none";
             iframe.style.borderRadius = "10px";
             iframe.style.boxShadow = "0px 8px 20px rgba(0, 0, 0, 0.7)";
-
-            iframe.src = `${vidlinkURL}?autoplay=true&title=true&primaryColor=141414&secondaryColor=e50914&iconColor=e50914`;
             iframe.allowFullscreen = true;
+            iframe.setAttribute("tabindex", "0");
 
             playerContainer.appendChild(iframe);
         }

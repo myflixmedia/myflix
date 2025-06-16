@@ -6,15 +6,25 @@
     <title>Movie Details</title>
     <link rel="stylesheet" href="movie_page.css">
     <link rel="icon" href="tab_icon.png" type="image/png">
+    <style>
+        [tabindex]:focus {
+            outline: 3px solid #00aaff;
+            transform: scale(1.03);
+        }
+
+        iframe:focus {
+            outline: 3px solid #00aaff;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1 id="movie-title"></h1>
+    <div class="container" tabindex="0">
+        <h1 id="movie-title" tabindex="0"></h1>
         <div class="content">
-            <div id="player-container">
+            <div id="player-container" tabindex="0">
                 <!-- Player will be dynamically added here -->
             </div>
-            <div class="movie-details">
+            <div class="movie-details" tabindex="0">
                 <div class="poster">
                     <img id="movie-poster" src="" alt="Movie Poster">
                 </div>
@@ -36,24 +46,37 @@
             </div>
         </div>
     </div>
+
     <script>
-        // Enhanced Popup Blocking Script
+        // Smart TV key navigation support
+        document.addEventListener('keydown', (e) => {
+            const focusable = Array.from(document.querySelectorAll('[tabindex]'));
+            const current = document.activeElement;
+            const index = focusable.indexOf(current);
+
+            if (e.key === "ArrowDown" && index < focusable.length - 1) {
+                focusable[index + 1].focus();
+                e.preventDefault();
+            } else if (e.key === "ArrowUp" && index > 0) {
+                focusable[index - 1].focus();
+                e.preventDefault();
+            } else if (e.key === "Enter" && current.tagName !== "IFRAME") {
+                current.click?.();
+            }
+        });
+
+        // Popup blocker logic
         (function() {
             const originalWindowOpen = window.open;
-
-            // Block popups globally
             window.open = function(url, target, features) {
                 console.log(`Blocked popup: ${url}`);
                 return null;
             };
 
-            // Monitor iframe interactions for potential popup triggers
             document.addEventListener('click', (event) => {
                 const target = event.target;
-
                 if (target.tagName === 'IFRAME' || target.closest('iframe')) {
                     window.open = originalWindowOpen;
-
                     setTimeout(() => {
                         window.open = function(url, target, features) {
                             console.log(`Blocked popup: ${url}`);
@@ -63,10 +86,8 @@
                 }
             });
 
-            // Prevent popups on hover
             document.addEventListener('mouseover', (event) => {
                 const target = event.target;
-
                 if (target.tagName === 'IFRAME' || target.closest('iframe')) {
                     window.open = function(url, target, features) {
                         console.log(`Blocked popup on hover: ${url}`);
@@ -75,39 +96,17 @@
                 }
             });
 
-            // Reapply popup blockers dynamically and ensure iframe controls
             const blockIframePopups = () => {
                 const iframes = document.querySelectorAll('iframe');
                 iframes.forEach((iframe) => {
                     try {
                         const iframeWindow = iframe.contentWindow;
                         if (iframeWindow) {
-                            iframeWindow.open = function() {
-                                console.log("Blocked popup from iframe.");
-                                return null;
-                            };
-
-                            iframeWindow.alert = function() {
-                                console.log("Blocked alert from iframe.");
-                            };
-
-                            iframeWindow.confirm = function() {
-                                console.log("Blocked confirm from iframe.");
-                                return false;
-                            };
-
-                            iframeWindow.prompt = function() {
-                                console.log("Blocked prompt from iframe.");
-                                return null;
-                            };
-
-                            iframe.addEventListener('mouseover', () => {
-                                iframe.style.pointerEvents = 'auto';
-                            });
-
-                            iframe.addEventListener('mouseout', () => {
-                                iframe.style.pointerEvents = 'auto';
-                            });
+                            iframeWindow.open = () => null;
+                            iframeWindow.alert = () => {};
+                            iframeWindow.confirm = () => false;
+                            iframeWindow.prompt = () => null;
+                            iframe.style.pointerEvents = 'auto';
                         }
                     } catch (err) {
                         console.warn("Unable to access iframe content window:", err);
@@ -115,19 +114,15 @@
                 });
             };
 
-            // Continuously monitor and block iframe popups
             setInterval(blockIframePopups, 500);
-
-            console.log("Enhanced popup blocker initialized.");
         })();
 
-        // Movie details script
+        // Movie loading logic
         const apiKey = "8be1f700d2547e560efe20e398bbe52b";
         const imageBaseUrl = "https://image.tmdb.org/t/p/w500";
 
         function getQueryParam(param) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(param);
+            return new URLSearchParams(window.location.search).get(param);
         }
 
         const tmdbId = getQueryParam("tmdbId");
@@ -136,9 +131,7 @@
             try {
                 const url = `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${apiKey}`;
                 const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch movie details: ${response.statusText}`);
-                }
+                if (!response.ok) throw new Error(`Failed to fetch movie details: ${response.statusText}`);
                 const movie = await response.json();
 
                 document.getElementById("movie-title").textContent = movie.title;
@@ -150,7 +143,6 @@
                 document.getElementById("movie-genres").textContent = movie.genres.map(genre => genre.name).join(", ");
 
                 updateUserScore(movie.vote_average * 10);
-
                 embedMovie(tmdbId);
             } catch (error) {
                 console.error("Error displaying movie details:", error);
@@ -165,9 +157,7 @@
             const circumference = 2 * Math.PI * radius;
 
             circle.style.strokeDasharray = `${circumference}`;
-            const offset = circumference - (score / 100) * circumference;
-            circle.style.strokeDashoffset = offset;
-
+            circle.style.strokeDashoffset = circumference - (score / 100) * circumference;
             scoreText.textContent = `${score.toFixed(0)}%`;
         }
 
@@ -175,17 +165,15 @@
             const playerContainer = document.getElementById("player-container");
             playerContainer.innerHTML = "";
 
-            const vidlinkURL = `https://vidlink.pro/movie/${tmdbId}`;
             const iframe = document.createElement("iframe");
-
+            iframe.src = `https://vidlink.pro/movie/${tmdbId}?autoplay=true&title=true&primaryColor=141414&secondaryColor=e50914&iconColor=e50914`;
             iframe.style.width = "1000px";
             iframe.style.height = "600px";
             iframe.style.border = "none";
             iframe.style.borderRadius = "10px";
             iframe.style.boxShadow = "0px 8px 20px rgba(0, 0, 0, 0.7)";
-
-            iframe.src = `${vidlinkURL}?autoplay=true&title=true&primaryColor=141414&secondaryColor=e50914&iconColor=e50914`;
             iframe.allowFullscreen = true;
+            iframe.setAttribute("tabindex", "0"); // Make iframe focusable
 
             playerContainer.appendChild(iframe);
         }

@@ -6,16 +6,27 @@
     <title>MYFLIX - TV Shows</title>
     <link rel="stylesheet" href="tvshows.css">
     <link rel="icon" href="tab_icon.png" type="image/png">
+    <style>
+        .tv-card:focus {
+            outline: 3px solid #00aaff;
+            transform: scale(1.05);
+            z-index: 10;
+        }
+        .tv-card {
+            outline: none;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <h1>Search for TV Shows</h1>
         <div class="search-bar-container">
             <input type="text" id="search-bar" placeholder="Enter TV show name">
-            <button id="search-button">Search</button>
+            <button id="search-button" tabindex="0">Search</button>
         </div>
         <div id="search-results" class="tv-grid"></div>
     </div>
+
     <script>
         const apiKey = "8be1f700d2547e560efe20e398bbe52b";
         const imageBaseUrl = "https://image.tmdb.org/t/p/w500";
@@ -23,9 +34,7 @@
         async function searchTVShows(query) {
             const url = `https://api.themoviedb.org/3/search/tv?api_key=${apiKey}&query=${encodeURIComponent(query)}`;
             const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error("Failed to fetch data from TMDB.");
-            }
+            if (!response.ok) throw new Error("Failed to fetch data from TMDB.");
             return response.json();
         }
 
@@ -41,6 +50,7 @@
             tvShows.forEach(tvShow => {
                 const tvCard = document.createElement("div");
                 tvCard.className = "tv-card";
+                tvCard.setAttribute("tabindex", "0");
                 tvCard.dataset.tvId = tvShow.id;
 
                 const imageUrl = tvShow.poster_path
@@ -61,6 +71,8 @@
 
                 resultsContainer.appendChild(tvCard);
             });
+
+            setupKeyboardNavigation();
         }
 
         async function handleSearch() {
@@ -79,12 +91,33 @@
         }
 
         document.getElementById("search-button").addEventListener("click", handleSearch);
-
         document.getElementById("search-bar").addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
                 handleSearch();
             }
         });
+
+        function setupKeyboardNavigation() {
+            const cards = Array.from(document.querySelectorAll(".tv-card"));
+            document.addEventListener("keydown", (e) => {
+                const active = document.activeElement;
+                const index = cards.indexOf(active);
+                if (index === -1) return;
+
+                if (e.key === "ArrowRight") {
+                    const next = cards[index + 1];
+                    if (next) next.focus();
+                    e.preventDefault();
+                } else if (e.key === "ArrowLeft") {
+                    const prev = cards[index - 1];
+                    if (prev) prev.focus();
+                    e.preventDefault();
+                } else if (e.key === "Enter") {
+                    active.click();
+                    e.preventDefault();
+                }
+            });
+        }
     </script>
 </body>
 </html>

@@ -6,14 +6,24 @@
     <title>MYFLIX</title>
     <link rel="stylesheet" href="index.css">
     <link rel="icon" href="tab_icon.png" type="image/png">
+    <style>
+        .trending-card:focus {
+            outline: 3px solid #00aaff;
+            transform: scale(1.05);
+            z-index: 10;
+        }
+        .trending-card {
+            outline: none;
+        }
+    </style>
 </head>
 <body>
     <header>
         <nav class="navbar">
             <ul class="nav-links">
-                <li><a href="movies.html">Movies</a></li>
-                <li><a href="tvshows.html">TV Shows</a></li>
-                <li><a href="anime.html">Anime</a></li>
+                <li><a href="movies.html" tabindex="0">Movies</a></li>
+                <li><a href="tvshows.html" tabindex="0">TV Shows</a></li>
+                <li><a href="anime.html" tabindex="0">Anime</a></li>
             </ul>
         </nav>
     </header>
@@ -21,24 +31,24 @@
         <div class="trending-section">
             <h2>Trending Movies</h2>
             <div class="carousel-wrapper">
-                <button class="scroll-button" id="scroll-left-movies">&lt;</button>
+                <button class="scroll-button" id="scroll-left-movies" tabindex="0">&lt;</button>
                 <div id="trending-movies" class="trending-carousel"></div>
-                <button class="scroll-button" id="scroll-right-movies">&gt;</button>
+                <button class="scroll-button" id="scroll-right-movies" tabindex="0">&gt;</button>
             </div>
 
             <h2>Trending TV Shows</h2>
             <div class="carousel-wrapper">
-                <button class="scroll-button" id="scroll-left-tvshows">&lt;</button>
+                <button class="scroll-button" id="scroll-left-tvshows" tabindex="0">&lt;</button>
                 <div id="trending-tvshows" class="trending-carousel"></div>
-                <button class="scroll-button" id="scroll-right-tvshows">&gt;</button>
+                <button class="scroll-button" id="scroll-right-tvshows" tabindex="0">&gt;</button>
             </div>
         </div>
     </main>
+
     <script>
         const apiKey = "8be1f700d2547e560efe20e398bbe52b";
         const imageBaseUrl = "https://image.tmdb.org/t/p/w500";
 
-        // Function to fetch trending data
         async function fetchTrending(mediaType, timeWindow) {
             const url = `https://api.themoviedb.org/3/trending/${mediaType}/${timeWindow}?api_key=${apiKey}`;
             try {
@@ -55,38 +65,38 @@
             }
         }
 
-        // Function to display trending items
         function displayTrending(data, containerId, type) {
             const container = document.getElementById(containerId);
-            container.innerHTML = ""; // Clear previous content
-            data.forEach(item => {
+            container.innerHTML = "";
+            data.forEach((item, index) => {
                 const card = document.createElement("div");
                 card.className = "trending-card";
-                card.dataset.id = item.id; // Store the TMDB ID
+                card.setAttribute("tabindex", "0"); // Enable keyboard focus
+                card.dataset.id = item.id;
 
                 const imageUrl = item.poster_path
                     ? `${imageBaseUrl}${item.poster_path}`
-                    : "placeholder.jpg"; // Fallback image
+                    : "placeholder.jpg";
 
                 card.innerHTML = `
                     <img src="${imageUrl}" alt="${item.title || item.name}" class="trending-image">
                     <p class="trending-title">${item.title || item.name}</p>
                 `;
 
-                // Add event listener to open movie_page or tvshow_page
                 card.addEventListener("click", () => {
                     if (type === "movie") {
                         window.location.href = `movie_page.html?tmdbId=${item.id}`;
-                    } else if (type === "tv") {
+                    } else {
                         window.location.href = `tvshow_page.html?tvId=${item.id}`;
                     }
                 });
 
                 container.appendChild(card);
             });
+
+            setupKeyboardNavigation(containerId);
         }
 
-        // Function to add horizontal scrolling functionality
         function addScrollButtons(leftButtonId, rightButtonId, containerId) {
             const leftButton = document.getElementById(leftButtonId);
             const rightButton = document.getElementById(rightButtonId);
@@ -101,11 +111,32 @@
             });
         }
 
-        // Fetch and display trending movies and TV shows
+        function setupKeyboardNavigation(containerId) {
+            const cards = Array.from(document.querySelectorAll(`#${containerId} .trending-card`));
+
+            document.addEventListener("keydown", (e) => {
+                const active = document.activeElement;
+                const index = cards.indexOf(active);
+                if (index === -1) return;
+
+                if (e.key === "ArrowRight") {
+                    const next = cards[index + 1];
+                    if (next) next.focus();
+                    e.preventDefault();
+                } else if (e.key === "ArrowLeft") {
+                    const prev = cards[index - 1];
+                    if (prev) prev.focus();
+                    e.preventDefault();
+                } else if (e.key === "Enter") {
+                    active.click();
+                    e.preventDefault();
+                }
+            });
+        }
+
         fetchTrending("movie", "week").then(data => displayTrending(data, "trending-movies", "movie"));
         fetchTrending("tv", "week").then(data => displayTrending(data, "trending-tvshows", "tv"));
 
-        // Add scrolling functionality to carousels
         addScrollButtons("scroll-left-movies", "scroll-right-movies", "trending-movies");
         addScrollButtons("scroll-left-tvshows", "scroll-right-tvshows", "trending-tvshows");
     </script>
